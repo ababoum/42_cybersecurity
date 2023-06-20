@@ -1,1 +1,9 @@
 .vscode
+*.key
+*.png
+*.gif
+*.jpg
+*.jpeg
+*.bmp
+*.hex
+__pycache__
