@@ -9,6 +9,7 @@ import sys
 recurvise = False
 recursive_depth = 5
 downloads_path = 'C:\\Users\\ababo\\OneDrive\\Gestion des finances\\42_work\\42_cybersecurity\\arachnida\\data\\'
+# downloads_path = './data/'
 initial_url = ''
 
 extensions_allowed = [
@@ -19,12 +20,16 @@ extensions_allowed = [
     '.bmp'
 ]
 
+already_visited_urls = []
+
 for arg in sys.argv:
     if arg == '-r':
         recurvise = True
     elif arg == '-l':
         try:
             recursive_depth = int(sys.argv[sys.argv.index(arg) + 1])
+            if recursive_depth <= 0:
+                raise ValueError
         except:
             print('Invalid recursive depth. Using default value (5).')
     elif arg == '-p':
@@ -33,7 +38,9 @@ for arg in sys.argv:
         except:
             print('Invalid path. Using default value (./data/).')
     elif sys.argv.index(arg) == len(sys.argv) - 1 and arg != '-r' \
-            and arg != '-l' and arg != '-p' and arg != sys.argv[0]:
+            and arg != '-l' and arg != '-p' and arg != sys.argv[0] \
+    and sys.argv[sys.argv.index(arg) - 1] != '-p' \
+    and sys.argv[sys.argv.index(arg) - 1] != '-l':
         initial_url = arg
 
 if initial_url == '':
@@ -48,6 +55,10 @@ if not initial_url.startswith('https'):
 
 
 def get_images(url: str, depth: int):
+    if url in already_visited_urls:
+        return
+    already_visited_urls.append(url)
+
     response = requests.get(url)
     if (response.status_code != 200):
         print('Error: ' + str(response.status_code))
@@ -60,6 +71,8 @@ def get_images(url: str, depth: int):
 
     for img in images:
         src = img.get('src')
+        if not src:
+            continue
         if src.startswith('//'):
             src = 'https:' + src
         elif src.startswith('/') and not src.startswith('//'):
@@ -72,9 +85,10 @@ def get_images(url: str, depth: int):
                     with open(downloads_path + src.split('/')[-1], 'wb') as f:
                         shutil.copyfileobj(res.raw, f)
                 else:
-                    print(f'Error while loading image {src}: {res.status_code}')
+                    print(
+                        f'Error while loading image {src}: {res.status_code}')
 
-    if recurvise and depth > 0:
+    if recurvise and depth > 1:
         links = soup.select('a')
         for link in links:
             href = link.get('href')
@@ -84,5 +98,6 @@ def get_images(url: str, depth: int):
                 get_images(href, depth - 1)
 
 ##########################################################
+
 
 get_images(initial_url, recursive_depth)
